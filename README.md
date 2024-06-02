@@ -1,7 +1,6 @@
 # SCInsta
 A feature-rich tweak for Instagram on iOS!\
-`Version v0.4.1` | `Tested on Instagram v330.0.0`
-
+`Version v0.4.1`
 ---
 
 # Features
