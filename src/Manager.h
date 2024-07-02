@@ -18,6 +18,7 @@
 + (BOOL)voiceMessageConfirmation;
 + (BOOL)stickerInteractConfirmation;
 + (BOOL)postCommentConfirmation;
++ (BOOL)changeDirectThemeConfirmation;
 + (BOOL)copyDecription;
 + (BOOL)hideReelsTab;
 + (BOOL)noRecentSearches;
@@ -36,7 +37,6 @@
 
 + (void)showSaveVC:(id)item;
 + (void)cleanCache;
-+ (BOOL)isEmpty:(NSURL *)url;
 + (NSString *)getDownloadingPersent:(float)per;
 
 @end
