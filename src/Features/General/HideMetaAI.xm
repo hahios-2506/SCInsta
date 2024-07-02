@@ -72,10 +72,10 @@
 // Meta AI direct search suggested topics header
 %hook IGLabelItemViewModel
 - (id)initWithLabelTitle:(id)arg1
-tag:(NSInteger)arg2
-uniqueIdentifier:(id)arg3
-configuration:(id)arg4
-accessibilityTraits:(NSUInteger)arg5
+                     tag:(NSInteger)arg2
+        uniqueIdentifier:(id)arg3
+           configuration:(id)arg4
+     accessibilityTraits:(NSUInteger)arg5
 {
     self = %orig;
 
@@ -119,11 +119,53 @@ accessibilityTraits:(NSUInteger)arg5
 }
 %end
 
+// Meta AI in message composer
+%hook IGDirectCommandSystemListViewController
+- (id)objectsForListAdapter:(id)arg1 {
+    NSMutableArray *newObjs = [%orig mutableCopy];
+
+    [newObjs enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+
+        if ([obj isKindOfClass:%c(IGDirectCommandSystemViewModel)]) {
+
+            IGDirectCommandSystemViewModel *typedObj = (IGDirectCommandSystemViewModel *)obj;
+            IGDirectCommandSystemRow *cmdSystemRow = (IGDirectCommandSystemRow *)[typedObj row];
+
+            IGDirectCommandSystemResult *_commandResult_command = MSHookIvar<IGDirectCommandSystemResult *>(cmdSystemRow, "_commandResult_command");
+
+            // Meta AI
+            if ([[_commandResult_command title] isEqualToString:@"Meta AI"]) {
+                if ([SCIManager hideMetaAI]) {
+                    NSLog(@"[SCInsta] Hiding meta ai: direct message composer suggestion");
+
+                    [newObjs removeObjectAtIndex:idx];
+                }
+                
+            }
+
+            // Meta AI (Imagine)
+            if ([[_commandResult_command commandString] isEqualToString:@"/imagine"]) {
+                if ([SCIManager hideMetaAI]) {
+                    NSLog(@"[SCInsta] Hiding meta ai: direct message composer /imagine suggestion");
+
+                    [newObjs removeObjectAtIndex:idx];
+                }
+                
+            }
+
+        }
+        
+    }];
+
+    return [newObjs copy];
+}
+%end
+
 /////////////////////////////////////////////////////////////////////////////
 
 // Explore
 
-// Meta AI search bar: explore search results data
+// Meta AI search bar: explore/user search results data
 %hook IGSearchListKitDataSource
 - (id)objectsForListAdapter:(id)arg1 {
     NSMutableArray *newObjs = [%orig mutableCopy];
@@ -157,6 +199,15 @@ accessibilityTraits:(NSUInteger)arg5
                     [newObjs removeObjectAtIndex:idx];
                 }
                 
+            }
+
+            // Meta AI user account in search results
+            else if ([[[obj title] string] isEqualToString:@"meta.ai"]) {
+                if ([SCIManager hideMetaAI]) {
+                    NSLog(@"[SCInsta] Hiding meta ai: explore search results meta ai user account suggestion");
+
+                    [newObjs removeObjectAtIndex:idx];
+                }
             }
 
         }
@@ -231,6 +282,19 @@ accessibilityTraits:(NSUInteger)arg5
     }
 
     return %orig;
+}
+%end
+
+// Search bar donut button
+%hook IGSearchBarDonutButton
+- (void)didMoveToWindow {
+    %orig;
+
+    if ([SCIManager hideMetaAI]) {
+        NSLog(@"[SCInsta] Hiding meta ai: search bar donut button");
+
+        [self removeFromSuperview];
+    }
 }
 %end
 
