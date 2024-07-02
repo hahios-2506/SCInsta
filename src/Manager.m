@@ -47,6 +47,9 @@
 + (BOOL)postCommentConfirmation {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"post_comment_confirm"];
 }
++ (BOOL)changeDirectThemeConfirmation {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"change_direct_theme_confirm"];
+}
 + (BOOL)copyDecription {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"copy_description"];
 }
@@ -95,23 +98,42 @@
 
 
 + (void)cleanCache {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSMutableArray<NSError *> *deletionErrors = [NSMutableArray array];
+
     // Temp folder
-    BOOL tempFolderSuccess = [[NSFileManager defaultManager] removeItemAtURL:[NSURL fileURLWithPath:NSTemporaryDirectory()] error:nil];
-    if (!tempFolderSuccess) NSLog(@"[SCInsta] Error deleting temp folder");
+    NSError *tempFolderError;
+    [fileManager removeItemAtURL:[NSURL fileURLWithPath:NSTemporaryDirectory()] error:&tempFolderError];
+
+    if (tempFolderError) [deletionErrors addObject:tempFolderError];
 
     // Analytics folder
+    NSError *analyticsFolderError;
     NSString *analyticsFolder = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"Application Support/com.burbn.instagram/analytics"];
-    BOOL analyticsFolderSuccess = [[NSFileManager defaultManager] removeItemAtURL:[[NSURL alloc] initFileURLWithPath:analyticsFolder] error:nil];
-    if (!analyticsFolderSuccess) NSLog(@"[SCInsta] Error deleting analytics folder");
+    [fileManager removeItemAtURL:[[NSURL alloc] initFileURLWithPath:analyticsFolder] error:&analyticsFolderError];
 
-}
-+ (BOOL)isEmpty:(NSURL *)url {
-    NSArray *folderFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:url includingPropertiesForKeys:@[] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
-    if (folderFiles.count == 0) {
-        return true;
-    } else {
-        return false;
+    if (analyticsFolderError) [deletionErrors addObject:analyticsFolderError];
+    
+    // Caches folder
+    NSString *cachesFolder = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"Caches"];
+    NSArray *cachesFolderContents = [fileManager contentsOfDirectoryAtURL:[[NSURL alloc] initFileURLWithPath:cachesFolder] includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
+    
+    for (NSURL *fileURL in cachesFolderContents) {
+        NSError *cacheItemDeletionError;
+        [fileManager removeItemAtURL:fileURL error:&cacheItemDeletionError];
+
+        if (cacheItemDeletionError) [deletionErrors addObject:cacheItemDeletionError];
     }
+
+    // Log errors
+    if (deletionErrors.count > 1) {
+
+        for (NSError *error in deletionErrors) {
+            NSLog(@"[SCInsta] File Deletion Error: %@", error);
+        }
+
+    }
+
 }
 + (void)showSaveVC:(id)item {
     UIActivityViewController *acVC = [[UIActivityViewController alloc] initWithActivityItems:@[item] applicationActivities:nil];
